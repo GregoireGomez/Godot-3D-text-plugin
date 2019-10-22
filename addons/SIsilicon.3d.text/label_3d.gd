@@ -15,27 +15,28 @@ export(float, 0, 1) var roughness = 0.5 setget set_roughness
 export(int) var max_steps = 256 setget set_max_steps
 export(float) var step_size = 1.0 setget set_step_size
 
-onready var label = $Viewport/Label
-onready var viewport = $Viewport
-onready var proxy = $MeshInstance
+var label
+var viewport
+var proxy
 var material
 
 func _ready():
-	if not viewport:
-		viewport = preload("text_viewport.tscn").instance()
-		label = viewport.get_node("Label")
-		add_child(viewport)
+	for i in range(get_child_count()):
+		remove_child(get_child(0))
 	
-	if not proxy:
-		proxy = MeshInstance.new()
-		proxy.mesh = CubeMesh.new()
-		proxy.material_override = preload("label_3d.material").duplicate()
-		material = proxy.material_override
-		
-		var viewTexture = viewport.get_texture()
-		viewTexture.flags = Texture.FLAG_FILTER
-		material.set_shader_param("text", viewTexture)
-		add_child(proxy)
+	viewport = preload("text_viewport.tscn").instance()
+	label = viewport.get_node("Label")
+	add_child(viewport)
+	
+	proxy = MeshInstance.new()
+	proxy.mesh = CubeMesh.new()
+	proxy.material_override = preload("label_3d.material").duplicate()
+	material = proxy.material_override
+	
+	var viewTexture = viewport.get_texture()
+	viewTexture.flags = Texture.FLAG_FILTER
+	material.set_shader_param("text", viewTexture)
+	add_child(proxy)
 	
 	set_align(align)
 	set_font(font)
@@ -53,80 +54,92 @@ func _ready():
 
 func set_text(string):
 	text = string;
-	label.text = text
-	label.rect_size = Vector2()
-	label.force_update_transform()
-	
-	var size = label.rect_size
-	viewport.size = size
-	
-	viewport.render_target_update_mode = Viewport.UPDATE_ALWAYS
-	yield(get_tree(), "idle_frame")
-	
-	label.rect_size = Vector2()
-	label.force_update_transform()
-	
-	size = label.rect_size
-	viewport.size = size
-	
-	yield(get_tree(), "idle_frame")
-	viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
-	
-	proxy.scale.x = size.x * text_scale
-	proxy.scale.y = size.y * text_scale
+	if label:
+		label.text = text
+		label.rect_size = Vector2()
+		label.force_update_transform()
+		
+		var size = label.rect_size
+		viewport.size = size
+		
+		viewport.render_target_update_mode = Viewport.UPDATE_ALWAYS
+		yield(get_tree(), "idle_frame")
+		
+		label.rect_size = Vector2()
+		label.force_update_transform()
+		
+		size = label.rect_size
+		viewport.size = size
+		
+		yield(get_tree(), "idle_frame")
+		viewport.render_target_update_mode = Viewport.UPDATE_DISABLED
+		
+		proxy.scale.x = size.x * text_scale
+		proxy.scale.y = size.y * text_scale
 
 func set_text_scale(scale):
 	text_scale = scale
-	var size = label.rect_size
-	proxy.scale.x = size.x * text_scale
-	proxy.scale.y = size.y * text_scale
+	if label:
+		var size = label.rect_size
+		if proxy:
+			proxy.scale.x = size.x * text_scale
+			proxy.scale.y = size.y * text_scale
 
 func set_extrude(ext):
 	extrude = ext
-	proxy.scale.z = extrude if extrude != 0 else 1
-	material.set_shader_param("extrude", extrude != 0)
 	
-	if extrude == 0 and proxy.mesh is CubeMesh:
-		proxy.mesh = QuadMesh.new()
-		proxy.mesh.size = Vector2(2, 2)
-	elif proxy.mesh is QuadMesh:
-		proxy.mesh = CubeMesh.new()
+	if proxy:
+		proxy.scale.z = extrude if extrude != 0 else 1
+		material.set_shader_param("extrude", extrude != 0)
+		
+		if extrude == 0 and proxy.mesh is CubeMesh:
+			proxy.mesh = QuadMesh.new()
+			proxy.mesh.size = Vector2(2, 2)
+		elif proxy.mesh is QuadMesh:
+			proxy.mesh = CubeMesh.new()
 
 func set_font(f):
 	font = f
-	label.add_font_override("font", font)
-	set_text(text)
+	if label:
+		label.add_font_override("font", font)
+		set_text(text)
 
 func set_align(al):
 	align = al
-	match align:
-		0:
-			label.align = Label.ALIGN_LEFT
-		1:
-			label.align = Label.ALIGN_RIGHT
-		2:
-			label.align = Label.ALIGN_CENTER
-		3:
-			label.align = Label.ALIGN_FILL
+	if label:
+		match align:
+			0:
+				label.align = Label.ALIGN_LEFT
+			1:
+				label.align = Label.ALIGN_RIGHT
+			2:
+				label.align = Label.ALIGN_CENTER
+			3:
+				label.align = Label.ALIGN_FILL
 	
 	set_text(text)
 
 func set_color(col):
 	color = col
-	material.set_shader_param("albedo", color)
+	if material:
+		material.set_shader_param("albedo", color)
 
 func set_metallic(metal):
 	metallic = metal
-	material.set_shader_param("metallic", metallic)
+	if material:
+		material.set_shader_param("metallic", metallic)
 
 func set_roughness(rough):
 	roughness = rough
-	material.set_shader_param("roughness", roughness)
+	if material:
+		material.set_shader_param("roughness", roughness)
 
 func set_max_steps(max_s):
 	max_steps = max(max_s, 8)
-	material.set_shader_param("maxSteps", max_steps)
+	if material:
+		material.set_shader_param("maxSteps", max_steps)
 
 func set_step_size(step_s):
 	step_size = max(step_s, 0)
-	material.set_shader_param("stepSize", step_size)
+	if material:
+		material.set_shader_param("stepSize", step_size)

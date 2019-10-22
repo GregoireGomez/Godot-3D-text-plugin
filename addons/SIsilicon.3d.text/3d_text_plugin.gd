@@ -7,9 +7,11 @@ var converter_button : Button
 var edited_node : Label3D
 
 func _enter_tree():
+	yield(get_tree(), "idle_frame")
+	
 	add_custom_type(
 			"Label3D", "Spatial",
-			preload("label_3d.gd"),
+			Label3D,
 			preload("icon_label_3d.svg")
 	)
 	
